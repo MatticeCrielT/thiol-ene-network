@@ -29,9 +29,13 @@ python project.py run -o calculate_conversion   # then any analysis step (list i
 ```
 
 Add `-j <job id>` to run one job, `-n 1` to run one at a time.
+One `polymerize` run does at most 10,000 reaction checks; if `status` does not show the job as
+reacted afterwards, run `polymerize` and `calculate_conversion` again (it continues where it stopped).
+
 The existing `workspace/` jobs have 10,000 monomers (about 62,500 beads): too large for a laptop.
-For a local test, set `"N_monomers": [500]` and a single replica in `init.py` (a 500-monomer run takes
-about 30 minutes on a laptop CPU).
+For local work use about 500 monomers and a single replica in `init.py`. On a laptop CPU a
+500-monomer thiol-ene job needs about 1.5-2.5 million timesteps (1.5-3 hours); with
+homopolymerization it finishes much sooner. Small systems give noisier numbers than the group's.
 
 ## Collect and plot results
 

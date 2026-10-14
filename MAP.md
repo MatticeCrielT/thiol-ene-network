@@ -42,6 +42,14 @@ in git**; the `workspace/` folders in git only hold the text results.
 "reacted" = `trajectory_conversion.txt` exists and its last 5 frames show no rise, so
 `calculate_conversion` must have run after `polymerize`.
 
+**How `polymerize` ends.** It stops when conversion has not risen for `stop_after_rounds` reaction
+checks (job document; `init.py` sets 50 for ~200 radicals and proportionally more for fewer radicals,
+e.g. 1000 for 500 monomers), or after 10,000 checks per run (1 million timesteps at period 100). In
+the second case run `polymerize` again: it continues from `polymerize.gsd`. Repeat
+`polymerize` + `calculate_conversion` until `project.py status` shows the job as reacted.
+Analyses use the last saved frame and are not refreshed when a polymerization is continued later:
+delete their output files first.
+
 **Analysis** (code in `scripts/network_properties.py` unless noted)
 
 | Operation | Needs | Writes | Content |
@@ -140,6 +148,8 @@ Still open:
 | Stretching stops with "Error in bond calculation" at strain 0.3-0.4 (FENE bond at its limit) | `scripts/deform_gel.py` | Same in the group's runs; the stress-strain file is still written and used |
 | An interrupted `deform_gel` leaves files that count as "done" | `project.py` label `deformed_gel` | Delete `deform_gel.gsd`, `deform_gel.log`, `pressures_gel.gsd` and run again |
 | `calculate_cld` done-check always false | `project.py` | Always listed as runnable |
+| 34 of the group's jobs have no `trajectory_thiol_ene_conversion.txt` | `workspace/` | Cannot be recreated without their `.gsd` files (fixed for new jobs) |
+| Job `03f1d195...` (12.5 %) has a wrong `N_crosslinkers` (1250) in its job document | `workspace/` | The simulation used 625 (checked from its first frame); `analysis/` recounts from the recipe |
 | Homopolymerization may add to the other C=C of the same monomer (a code comment says this should be excluded) | `scripts/system.py` `chain_growth` | Rare: that C=C is usually further away than the reaction distance |
 
 Fixed on 2026-10-14 (branch `mattice/bugfixes`). Results in `workspace/` were made **before** these
@@ -154,3 +164,5 @@ fixes; only the percolation frame changes their meaning:
 | Gel fraction written to `file.txt` | Writes `gel_fraction.txt` again |
 | `percolation_analyzed` label returned nothing | Returns its value |
 | Neighbour filter used `|` instead of `&` | Fixed (no change in behaviour) |
+| `calculate_conversion` never created `trajectory_thiol_ene_conversion.txt` (only updated it) | Creates it for new jobs |
+| `polymerize` always stopped after 50 checks without a rise; small systems stopped far too early (a 500-monomer job at 58 %) | Window `stop_after_rounds` in the job document, set by `init.py` from the number of radicals; default stays 50 |
