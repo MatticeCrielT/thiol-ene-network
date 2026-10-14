@@ -1,7 +1,6 @@
 import numpy as np
 import gsd,gsd.hoomd
 import sys, os 
-sys.path.insert(0,'/Users/statt/Programs/hoomd_fork_4.0.1/')
 import hoomd
 from timeit import default_timer as timer
 from scripts.system import System
