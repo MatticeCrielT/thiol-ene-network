@@ -136,6 +136,9 @@ def calculate_conversion(job_id):
                 t_te = np.concatenate((data, t_te_new))
             # dump the thiol-ene conversions into the txt
             np.savetxt(thiolene_conversion_txt, t_te, header=header, fmt='%i %.16f %.16f', comments='')
+    else:
+        # first time: write the file (it was never created for new jobs before)
+        np.savetxt(thiolene_conversion_txt, t_te, header="frame thiol_conv ene_conv", fmt='%i %.16f %.16f', comments='')
 
 '''
 runs on polymerize file in the workspace, adds on to conversion text files that are already recorded
