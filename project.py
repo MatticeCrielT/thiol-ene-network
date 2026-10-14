@@ -26,16 +26,23 @@ def equilibrated(job):
 
 @MyProject.label
 def reacted(job):
-    # return job.doc['reacted_monomers']>0.9
+    # Same rule as the stop in polymerize: no rise in C=C conversion over stop_after_rounds
+    # reaction checks (a frame is saved every 10 checks; default 50 checks = the original 4-frame test).
+    # Molecule conversion is only used when the C=C file is missing: it hardly changes once
+    # everything belongs to the gel, while C=C groups inside the gel still react.
     try:
         conversion_data = np.genfromtxt(job.fn('trajectory_conversion.txt'), comments="#", delimiter=" ")
     except FileNotFoundError:
         return False
-    cutoff = 0
-    if float(conversion_data[-1,1]) - float(conversion_data[-5,1]) <= cutoff:
-        return True
-    else:
+    column = 1
+    if job.isfile('trajectory_thiol_ene_conversion.txt'):
+        conversion_data = np.genfromtxt(job.fn('trajectory_thiol_ene_conversion.txt'), skip_header=1)
+        column = 2
+    frames_back = max(4, int(job.doc.get('stop_after_rounds', 50))//10 - 1)
+    if len(conversion_data) <= frames_back:
         return False
+    cutoff = 0
+    return float(conversion_data[-1,column]) - float(conversion_data[-1-frames_back,column]) <= cutoff
 
 @MyProject.label
 def reacting(job):
@@ -362,7 +369,7 @@ assess percolated frame
 
 @MyProject.label
 def percolation_analyzed(job):
-    job.isfile("percolation_data.txt")
+    return job.isfile("percolation_data.txt")
 
 @MyProject.label
 def percolation_frame_recorded(job):

@@ -17,12 +17,15 @@ Usage (inside the thiolene conda environment):
 """
 import argparse
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO))
+from scripts.system import molecule_counts  # same bead counting as the simulation
 
 # Settings from signac_statepoint.json, renamed to plain names.
 SETTINGS = {
@@ -56,11 +59,11 @@ COLUMNS = [
     ("density", "Beads per unit volume at the start"),
     ("temperature", "kT in simulation units"),
     ("r_cut_reaction", "Distance within which beads can react (bead diameters)"),
-    ("monomer_size", "Spacer setting (0 = simple 4-bead ene monomer)"),
-    ("extender_size", "Spacer setting (0 = simple 2-bead dithiol)"),
+    ("monomer_size", "Spacer beads between the two C=C of the di-ene (0 = E=E-E=E)"),
+    ("extender_size", "Spacer beads between the two SH of the dithiol (0 = S-S)"),
     ("n_tetrathiols", "Number of tetrathiol molecules"),
     ("n_dithiols", "Number of dithiol molecules"),
-    ("n_beads", "Total beads in the box (simple molecules only)"),
+    ("n_beads", "Total beads in the box (without the 4 placeholder beads)"),
     ("total_timesteps", "Last timestep of the polymerization (polymerize.txt)"),
     ("final_ene_conversion", "Fraction of C=C groups reacted at the end (job document)"),
     ("final_thiol_conversion", "Fraction of SH groups reacted at the end (trajectory_thiol_ene_conversion.txt)"),
@@ -178,12 +181,12 @@ def collect_job(folder):
     for key, name in SETTINGS.items():
         row[name] = sp.get(key)
 
-    # molecule counts (the job document's N_total is wrong, so recount here)
-    row["n_tetrathiols"] = doc.get("N_crosslinkers")
-    row["n_dithiols"] = doc.get("N_extenders")
-    simple = sp.get("monomer_size", 0) == 0 and sp.get("extender_size", 0) == 0
-    if simple and row["n_tetrathiols"] is not None:
-        row["n_beads"] = 5 * row["n_tetrathiols"] + 2 * row["n_dithiols"] + 4 * sp["N_monomers"]
+    # molecule counts (older job documents hold a wrong N_total, so recount here)
+    counts = molecule_counts(sp["N_monomers"], sp["crosslinker_percent"],
+                             sp.get("monomer_size", 0), sp.get("extender_size", 0))
+    row["n_tetrathiols"] = counts["N_crosslinkers"]
+    row["n_dithiols"] = counts["N_extenders"]
+    row["n_beads"] = counts["N_particles"]
 
     # --- reaction ----------------------------------------------------------
     row["total_timesteps"], final_volume = read_polymerize_log(folder / "polymerize.txt")

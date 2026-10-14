@@ -40,8 +40,9 @@ class Simulator():
         
         self.chain_transfer_probability= job.sp['chain_transfer_probability']
         self.chain_side_reaction_probability= job.sp['chain_side_reaction_probability']
+        self.thiol_reaction_probability= job.sp.get('thiol_reaction_probability', 1.0)
 
-        self.polymerize_period = job.sp['polymerize_period'] 
+        self.polymerize_period = job.sp['polymerize_period']
 
         # file names 
         self.equi_gsd_file = job.fn('equi.gsd')
@@ -397,14 +398,18 @@ class Simulator():
             integration_tps = []
 
             past_reacted_monomers = []
+            # stop when conversion has not risen for this many reaction checks. 50 was used for the
+            # 10,000-monomer jobs; small systems (few radicals) need more, e.g. job.doc['stop_after_rounds'] = 1000
+            stop_after_rounds = int(self.job.doc.get('stop_after_rounds', 50))
             for i in range(10000):
                 propagate_start = timer()
                 with sim.state.cpu_local_snapshot as snapshot:
                     S.propagate_reaction(snapshot,
                                         r_cut=self.r_cut_reaction,
                                         chain_transfer_probability=self.chain_transfer_probability,
-                                        chain_side_reaction_probability=self.chain_side_reaction_probability)
-                    
+                                        chain_side_reaction_probability=self.chain_side_reaction_probability,
+                                        thiol_reaction_probability=self.thiol_reaction_probability)
+
                     dummy_id = len(sim.state.bond_types)-1
                     bonds = snapshot.bonds.group[snapshot.bonds.typeid!=dummy_id] # remove dummy type bond 
                     nids, counts = np.unique(np.concatenate(bonds).flatten(),return_counts=True)
@@ -420,7 +425,7 @@ class Simulator():
                     unreacted_enes = len(ids[particle_ids==1])/2
                     reacted_monomers = 1 - unreacted_enes/(self.N_monomers*2)
                     self.job.doc['reacted_monomers'] = reacted_monomers
-                    if len(past_reacted_monomers) < 50:
+                    if len(past_reacted_monomers) < stop_after_rounds:
                         past_reacted_monomers.append(reacted_monomers)
                     else:
                         if (reacted_monomers - past_reacted_monomers[0]) <= reacted_cutoff:

@@ -29,9 +29,13 @@ python project.py run -o calculate_conversion   # then any analysis step (list i
 ```
 
 Add `-j <job id>` to run one job, `-n 1` to run one at a time.
+One `polymerize` run does at most 10,000 reaction checks; if `status` does not show the job as
+reacted afterwards, run `polymerize` and `calculate_conversion` again (it continues where it stopped).
+
 The existing `workspace/` jobs have 10,000 monomers (about 62,500 beads): too large for a laptop.
-For a local test, set `"N_monomers": [500]` and a single replica in `init.py` (a 500-monomer run takes
-about 30 minutes on a laptop CPU).
+For local work use about 500 monomers and a single replica in `init.py`. On a laptop CPU a
+500-monomer thiol-ene job needs about 1.5-2.5 million timesteps (1.5-3 hours); with
+homopolymerization it finishes much sooner. Small systems give noisier numbers than the group's.
 
 ## Collect and plot results
 
@@ -44,8 +48,11 @@ See [analysis/README.md](analysis/README.md).
 
 ## Known limitations
 
-- `deform` and `deform_gel` (stretching tests) need a HOOMD newer than 4.0.1 (`hoomd.variant.box`);
-  everything else runs on 4.0.1.
+- `environment.yml` uses HOOMD 4.9.1, which runs every step. The group's `workspace/` results were
+  made with HOOMD 4.0.1, which cannot run `deform` / `deform_gel`.
+- The stretching test stops at about 35-45 % elongation (a FENE bond reaches its maximum length),
+  as in the group's runs. In small systems (a few thousand beads) the modulus from the first 10 %
+  strain is dominated by noise; use 10,000 monomers or fit a longer part of the curve.
 - Bugs found while reading the code are listed in [MAP.md](MAP.md#known-issues).
 
 The original notes of the group are in [old/README_original](old/README_original).
