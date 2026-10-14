@@ -1318,7 +1318,7 @@ def strand_lengths_analysis(job_id, defect_frame = -1):
     else:
         file = "/conv95_gel_fraction.txt"
 
-    with open(jdir + "/file.txt", "w") as f:
+    with open(jdir + file, "w") as f:
         f.write(str(gf))
 
     new_bonds = []

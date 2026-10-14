@@ -40,8 +40,9 @@ class Simulator():
         
         self.chain_transfer_probability= job.sp['chain_transfer_probability']
         self.chain_side_reaction_probability= job.sp['chain_side_reaction_probability']
+        self.thiol_reaction_probability= job.sp.get('thiol_reaction_probability', 1.0)
 
-        self.polymerize_period = job.sp['polymerize_period'] 
+        self.polymerize_period = job.sp['polymerize_period']
 
         # file names 
         self.equi_gsd_file = job.fn('equi.gsd')
@@ -403,8 +404,9 @@ class Simulator():
                     S.propagate_reaction(snapshot,
                                         r_cut=self.r_cut_reaction,
                                         chain_transfer_probability=self.chain_transfer_probability,
-                                        chain_side_reaction_probability=self.chain_side_reaction_probability)
-                    
+                                        chain_side_reaction_probability=self.chain_side_reaction_probability,
+                                        thiol_reaction_probability=self.thiol_reaction_probability)
+
                     dummy_id = len(sim.state.bond_types)-1
                     bonds = snapshot.bonds.group[snapshot.bonds.typeid!=dummy_id] # remove dummy type bond 
                     nids, counts = np.unique(np.concatenate(bonds).flatten(),return_counts=True)

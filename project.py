@@ -362,7 +362,7 @@ assess percolated frame
 
 @MyProject.label
 def percolation_analyzed(job):
-    job.isfile("percolation_data.txt")
+    return job.isfile("percolation_data.txt")
 
 @MyProject.label
 def percolation_frame_recorded(job):

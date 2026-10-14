@@ -211,7 +211,9 @@ def get_percolation_frame(job_id):
     # get percolation file
     percolation_txt = job.fn("percolation_data.txt")
     data = np.loadtxt(percolation_txt, delimiter=' ', skiprows=1)
+    # first frame in which the largest cluster spans the box in all 3 directions
     for i in data:
         if i[1] > 2:
             job.doc['percolation_frame'] = i[0]
+            break
 

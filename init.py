@@ -3,6 +3,7 @@
 import numpy as np
 import signac
 import itertools
+from scripts.system import molecule_counts
 
 
 def grid(gridspec):
@@ -31,8 +32,8 @@ def main():
         "temperature":[1],
         "crosslinker_percent":[50],#[0, 12.5, 25, 37.5, 50, 62.5, 75, 87.5, 100],
         "N_monomers":[10000],
-        "monomer_size":[0],
-        "extender_size":[0],
+        "monomer_size":[0],     # spacer beads between the two C=C of the di-ene (0 = E=E-E=E)
+        "extender_size":[0],    # spacer beads between the two SH of the dithiol (0 = S-S)
         "radical_percent":[1.0],
         "chain_side_reaction_probability": [0.0,0.15],#0.0,0.5,0.6,0.9],
         "chain_transfer_probability": [0.1],
@@ -51,22 +52,12 @@ def main():
 
         # open the job and initialize
         job = project.open_job(sp).init()
-        if job.sp['monomer_size']>0 and job.sp['extender_size']>0:
-            size_monomer =  job.sp['monomer_size']+6 
-            size_extender =  job.sp['extender_size']+1 
-            reactive_beads = job.sp['N_monomers']*2 
-            crosslinker_fraction = job.sp['crosslinker_percent']/100.
-            N_crosslinker = int(np.round(reactive_beads*crosslinker_fraction/4.))
-            N_extenders =  int(np.round((reactive_beads-N_crosslinker*4)/2.))
-            N_particles =  N_crosslinker*13 + N_extenders*size_extender+ job.sp['N_monomers']*size_monomer
-        else: 
-            size_monomer =  2
-            size_extender =  2
-            reactive_beads = job.sp['N_monomers']*2 
-            crosslinker_fraction = job.sp['crosslinker_percent']/100.
-            N_crosslinker = int(np.round(reactive_beads*crosslinker_fraction/4.))
-            N_extenders =  int(np.round((reactive_beads-N_crosslinker*4)/2.))
-            N_particles =  N_crosslinker*5 + N_extenders*size_extender+ job.sp['N_monomers']*size_monomer
+        # same counting as the simulation itself (scripts/system.py)
+        counts = molecule_counts(job.sp['N_monomers'], job.sp['crosslinker_percent'],
+                                 job.sp['monomer_size'], job.sp['extender_size'])
+        N_crosslinker = counts['N_crosslinkers']
+        N_extenders = counts['N_extenders']
+        N_particles = counts['N_particles']
 
         job.doc['N_extenders'] = N_extenders
         job.doc['N_crosslinkers'] = N_crosslinker
