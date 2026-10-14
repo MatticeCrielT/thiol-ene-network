@@ -19,6 +19,23 @@ def dist_pbc(x1,x0,Box):
     return np.sqrt(np.sum(delta**2.0))
 
 """
+Bonds that certainly carry no load: an unreacted thiol end (-SH bond) or an unreacted C=C.
+Their longest length after contract_bonds is the cutoff for "elastically ineffective".
+Only bonds touching an unreacted Thiol (or thiyl radical) or Ene_C bead count, so spacer bonds
+inside a dithiol (labelled -SH in older spaced systems) are not mistaken for unreacted ends.
+For the simple molecules this is exactly the set of -SH and CC_Double bonds.
+"""
+def select_known_ineffective_bonds(frame):
+    HS_SH_id = frame.bonds.types.index('-SH')
+    C_C_double_id = frame.bonds.types.index('CC_Double')
+    unreacted = np.isin(frame.particles.typeid, [frame.particles.types.index('Thiol'),
+                                                  frame.particles.types.index('RSulfur'),
+                                                  frame.particles.types.index('Ene_C')])
+    labelled = (frame.bonds.typeid == HS_SH_id) | (frame.bonds.typeid == C_C_double_id)
+    touches_unreacted = unreacted[frame.bonds.group[:, 0]] | unreacted[frame.bonds.group[:, 1]]
+    return frame.bonds.group[labelled & touches_unreacted]
+
+"""
 frame.bonds.group gives a np.array that is of form [[a,b],[c,d],[e,f],[a,g],...] 
 where a is bonded to b, c is bonded to d, etc.
 
@@ -1428,9 +1445,7 @@ def contract_bonds_analysis(job_id, file="contract_bonds.gsd"):
     # get all bonds that are elastically ineffective
     ineffective_bonds = []
         # find the cutoff based on the maximum bond length of known ineffective bonds
-    HS_SH_id = frame.bonds.types.index('-SH')
-    C_C_double_id = frame.bonds.types.index('CC_Double')
-    known_ineffective_bonds = frame.bonds.group[np.where((frame.bonds.typeid == HS_SH_id) | (frame.bonds.typeid == C_C_double_id))[0]]
+    known_ineffective_bonds = select_known_ineffective_bonds(frame)
     max_ineffective_length = 0
     for bond in known_ineffective_bonds:
         length = dist_pbc(frame.particles.position[bond[0]],\
@@ -1564,9 +1579,7 @@ def scanlan_case_analysis_on_contract_bonds(job_id, file="contract_bonds.gsd"):
     bonds = frame.bonds.group[frame.bonds.typeid!=dummy_id]
 
     # find the effective bond cutoff based on the maximum bond length of known ineffective bonds
-    HS_SH_id = frame.bonds.types.index('-SH')
-    C_C_double_id = frame.bonds.types.index('CC_Double')
-    known_ineffective_bonds = frame.bonds.group[np.where((frame.bonds.typeid == HS_SH_id) | (frame.bonds.typeid == C_C_double_id))[0]]
+    known_ineffective_bonds = select_known_ineffective_bonds(frame)
     max_ineffective_length = 0
     for bond in known_ineffective_bonds:
         length = dist_pbc(frame.particles.position[bond[0]],\

@@ -114,11 +114,12 @@ class System:
             [0]*4,
             [])
         # dithiol extender: S - (extender_size x D) - S
+        # bonds on a thiol are -SH (relabelled -S- when it reacts), spacer-spacer bonds are C-C single
         n = self.size_extender
         extender_template = (
             [self.thiol_type] + [self.spacer_type2]*extender_size + [self.thiol_type],
             [[i,i+1] for i in range(n-1)],
-            [0]*(n-1),
+            [0 if i in (0, n-2) else 4 for i in range(n-1)],
             [[i,i+1,i+2] for i in range(n-2)] if self.FJ_system == False else [])
         # di-ene monomer: E=E - (monomer_size x D) - E=E, terminal double bonds, internal single bonds
         m = self.size_monomer
