@@ -39,8 +39,8 @@ in git**; the `workspace/` folders in git only hold the text results.
 | `diffuse` | `equi.gsd` | `diffuse.gsd`, `diffuse.txt` | Motion without reactions; only for 50 %, homopolymerization 0, replica 0 |
 | `percolation_contract_bonds` | `percolation_frame` in job doc | `percolation_contract_bonds.gsd` | `contract_bonds` on the frame stored as `percolation_frame` |
 
-"reacted" = `trajectory_conversion.txt` exists and its last 5 frames show no rise, so
-`calculate_conversion` must have run after `polymerize`.
+"reacted" = `calculate_conversion` has run after `polymerize` and C=C conversion has not risen over
+the last `stop_after_rounds` reaction checks (molecule conversion if the C=C file is missing).
 
 **How `polymerize` ends.** It stops when conversion has not risen for `stop_after_rounds` reaction
 checks (job document; `init.py` sets 50 for ~200 radicals and proportionally more for fewer radicals,
@@ -149,6 +149,8 @@ Still open:
 | An interrupted `deform_gel` leaves files that count as "done" | `project.py` label `deformed_gel` | Delete `deform_gel.gsd`, `deform_gel.log`, `pressures_gel.gsd` and run again |
 | `calculate_cld` done-check always false | `project.py` | Always listed as runnable |
 | 34 of the group's jobs have no `trajectory_thiol_ene_conversion.txt` | `workspace/` | Cannot be recreated without their `.gsd` files (fixed for new jobs) |
+| 8 of the 60 thiol-ene-only jobs (stiffness 100) end at C=C conversion 0.924-0.9255 | `workspace/` | Points to a stop at 92.5 % in an earlier code version (`scripts/simulate.py` still has it for the GPU path); their final values may be slightly low |
+| With the stricter `reacted` label (C=C conversion), 9 group jobs count as not finished | `workspace/` | They rose < 0.7 % over their last 100 frames; results usable, but their `.gsd` files are not here to continue |
 | Job `03f1d195...` (12.5 %) has a wrong `N_crosslinkers` (1250) in its job document | `workspace/` | The simulation used 625 (checked from its first frame); `analysis/` recounts from the recipe |
 | Homopolymerization may add to the other C=C of the same monomer (a code comment says this should be excluded) | `scripts/system.py` `chain_growth` | Rare: that C=C is usually further away than the reaction distance |
 
