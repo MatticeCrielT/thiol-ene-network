@@ -167,4 +167,6 @@ fixes; only the percolation frame changes their meaning:
 | `percolation_analyzed` label returned nothing | Returns its value |
 | Neighbour filter used `|` instead of `&` | Fixed (no change in behaviour) |
 | `calculate_conversion` never created `trajectory_thiol_ene_conversion.txt` (only updated it) | Creates it for new jobs |
+| Load-carrying analysis broke for dithiols with spacers (spacer bonds labelled `-SH` set the cutoff: 1 % instead of 87 % load-carrying) | Only `-SH` / C=C bonds on unreacted beads set the cutoff; spacer bonds labelled C-C single. Unchanged for simple molecules (tested) |
+| The `reacted` label used molecule conversion over 4 frames, so unfinished small jobs counted as done | Uses C=C conversion over `stop_after_rounds` (same 4 frames for the default 50) |
 | `polymerize` always stopped after 50 checks without a rise; small systems stopped far too early (a 500-monomer job at 58 %) | Window `stop_after_rounds` in the job document, set by `init.py` from the number of radicals; default stays 50 |
