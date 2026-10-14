@@ -44,8 +44,11 @@ See [analysis/README.md](analysis/README.md).
 
 ## Known limitations
 
-- `deform` and `deform_gel` (stretching tests) need a HOOMD newer than 4.0.1 (`hoomd.variant.box`);
-  everything else runs on 4.0.1.
+- `environment.yml` uses HOOMD 4.9.1, which runs every step. The group's `workspace/` results were
+  made with HOOMD 4.0.1, which cannot run `deform` / `deform_gel`.
+- The stretching test stops at about 35-45 % elongation (a FENE bond reaches its maximum length),
+  as in the group's runs. In small systems (a few thousand beads) the modulus from the first 10 %
+  strain is dominated by noise; use 10,000 monomers or fit a longer part of the curve.
 - Bugs found while reading the code are listed in [MAP.md](MAP.md#known-issues).
 
 The original notes of the group are in [old/README_original](old/README_original).

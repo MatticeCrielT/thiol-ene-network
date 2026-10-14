@@ -1,6 +1,6 @@
 # Repository map
 
-Status of 2026-10-14 (branch `mattice/cleanup`). What every folder and file is, how the steps connect,
+Status of 2026-10-14 (branch `mattice/bugfixes`). What every folder and file is, how the steps connect,
 and what every result file means.
 
 ## 1. Top level
@@ -34,8 +34,8 @@ in git**; the `workspace/` folders in git only hold the text results.
 | `equilibrate` | - | `equi.gsd` | Build molecules, remove overlaps, 5,000 steps at kT = 1 |
 | `polymerize` | `equi.gsd` | `polymerize.gsd`, `polymerize.txt`, job doc `reacted_monomers` | Radicals on, reaction checks + motion until conversion stops |
 | `contract_bonds` | reacted | `contract_bonds.gsd` | Shrink every bond to ~0 so loops and dangling ends collapse; used to find load-carrying strands |
-| `deform_gel` | reacted | `deform_gel.gsd`, `deform_gel.log`, `pressures_gel.gsd` | Stretch the isolated gel (`scripts/deform_gel.py`). **Needs HOOMD > 4.0.1** |
-| `deform` | reacted | `deform.gsd`, `deform.log` | Older stretch of the whole box (`scripts/deform.py`). **Needs HOOMD > 4.0.1** |
+| `deform_gel` | reacted | `deform_gel.gsd`, `deform_gel.log`, `pressures_gel.gsd` | Stretch the isolated gel (`scripts/deform_gel.py`). Needs HOOMD >= 4.6 |
+| `deform` | reacted | `deform.gsd`, `deform.log` | Older stretch of the whole box (`scripts/deform.py`). Needs HOOMD >= 4.6 |
 | `diffuse` | `equi.gsd` | `diffuse.gsd`, `diffuse.txt` | Motion without reactions; only for 50 %, homopolymerization 0, replica 0 |
 | `percolation_contract_bonds` | `percolation_frame` in job doc | `percolation_contract_bonds.gsd` | `contract_bonds` on the frame stored as `percolation_frame` |
 
@@ -71,7 +71,7 @@ Linux program runs in WSL.
 
 | File | Role |
 |---|---|
-| `system.py` | The chemistry: bead / bond types, building the molecules, initiation and the three reactions |
+| `system.py` | The chemistry: bead / bond types, `molecule_counts()`, building the molecules (spacer length via `monomer_size` / `extender_size`), initiation and the three reactions |
 | `simulate.py` | The physics: force field, `equilibrate`, `polymerize` (reaction loop), `contract_bonds`, `diffuse` |
 | `customAction/polymerize.py` | Alternative GPU reaction code for `polymerization_method = custom_action_*`; not used by the current jobs (`cpu_local_snapshot`) |
 | `conversion.py` | Conversion and molecule sizes per frame; 95 % and percolation frames |
@@ -132,13 +132,25 @@ reacted. `analysis/` gives the gel point on both.
 
 ## Known issues
 
+Still open:
+
 | Issue | Where | Effect |
 |---|---|---|
-| `thiol_reaction_probability` never reaches the reaction code | `scripts/simulate.py` (`propagate_reaction` call) | Always 1.0, whatever `init.py` says |
-| Spaced molecules can never switch on; their builder is also broken | `scripts/system.py` `create_initial_configuration` | `monomer_size` / `extender_size` are ignored |
-| Bead counts in `init.py` differ from `system.py` | `init.py` | `N_total` and `L` in the job document are wrong; simulation correct |
-| `deform` / `deform_gel` use `hoomd.variant.box` | `scripts/deform*.py` | Not in HOOMD 4.0.1: needs a newer HOOMD |
-| `get_percolation_frame` keeps overwriting instead of stopping at the first spanning frame | `scripts/conversion.py` | `percolation_frame` = last frame (checked: e.g. 1642 instead of 1368), so the 20 "percolation" analyses describe the final network |
-| Gel fraction written to `file.txt` | `strand_lengths_analysis` | `gel_fraction.txt` is no longer updated |
-| `calculate_cld` done-check always false; `percolation_analyzed` returns nothing | `project.py` | Always listed as runnable / label unused |
-| Neighbour filter uses `|` instead of `&` | `scripts/system.py` (3 places) | No effect in practice |
+| `deform` / `deform_gel` use `hoomd.variant.box` | `scripts/deform*.py` | Needs HOOMD >= 4.6; `environment.yml` now uses 4.9.1 (tested) |
+| Stretching stops with "Error in bond calculation" at strain 0.3-0.4 (FENE bond at its limit) | `scripts/deform_gel.py` | Same in the group's runs; the stress-strain file is still written and used |
+| An interrupted `deform_gel` leaves files that count as "done" | `project.py` label `deformed_gel` | Delete `deform_gel.gsd`, `deform_gel.log`, `pressures_gel.gsd` and run again |
+| `calculate_cld` done-check always false | `project.py` | Always listed as runnable |
+| Homopolymerization may add to the other C=C of the same monomer (a code comment says this should be excluded) | `scripts/system.py` `chain_growth` | Rare: that C=C is usually further away than the reaction distance |
+
+Fixed on 2026-10-14 (branch `mattice/bugfixes`). Results in `workspace/` were made **before** these
+fixes; only the percolation frame changes their meaning:
+
+| Issue | Fix |
+|---|---|
+| `thiol_reaction_probability` never reached the reaction code (always 1.0) | Passed on in `scripts/simulate.py`. All existing jobs used 1, so they are unaffected |
+| Spaced molecules could never switch on; their builder was broken | `monomer_size` / `extender_size` = number of spacer beads (type D) in the di-ene / dithiol. Size 0 gives bit-identical systems to the old builder (tested) |
+| Bead counts in `init.py` differed from `system.py` (`N_total`, `L` wrong in job documents) | Both use `molecule_counts()` in `scripts/system.py`. Old job documents still hold the wrong values |
+| `get_percolation_frame` stored the last spanning frame instead of the first | Stops at the first. The 20 existing "percolation" analyses describe the final network, not the gel point |
+| Gel fraction written to `file.txt` | Writes `gel_fraction.txt` again |
+| `percolation_analyzed` label returned nothing | Returns its value |
+| Neighbour filter used `|` instead of `&` | Fixed (no change in behaviour) |

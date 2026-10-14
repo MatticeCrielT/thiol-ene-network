@@ -1,19 +1,23 @@
 # Conda environment that runs this project on Linux / WSL (CPU only).
 # Create:   conda env create -f environment.yml
 # Use:      conda activate thiolene
-# Versions are the ones tested on 2026-10-12/13 (simulation + analysis).
+#
+# Tested 2026-10-14: the full pipeline (equilibrate, polymerize, all analyses, contract_bonds,
+# deform_gel + modulus) and analysis/*.py. HOOMD >= 4.6 is needed for deform / deform_gel
+# (hoomd.variant.box). The group's results in workspace/ were made with HOOMD 4.0.1; to
+# reproduce that exactly use hoomd=4.0.1 and gsd=2.9 (deform / deform_gel then do not run).
 name: thiolene
 channels:
   - conda-forge
 dependencies:
   - python=3.10
-  - hoomd=4.0.1
-  - gsd=2.9
+  - hoomd=4.9.1
+  - gsd=4.0
   - freud=3.4
   - signac=2.4
   - signac-flow=0.29
   - networkx=3.4
-  - numpy=1.26
+  - numpy=2.2
   - scipy=1.15
   - matplotlib=3.10
   - pandas=2.3
