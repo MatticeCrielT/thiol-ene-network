@@ -63,7 +63,13 @@ def main():
         job.doc['N_crosslinkers'] = N_crosslinker
         job.doc['N_total']=  N_particles
         job.doc['L'] =  (N_particles/job.sp['density'])**(1/3.0)
-        
+
+        # polymerize stops when conversion has not risen for this many reaction checks.
+        # The 10,000-monomer jobs (~200 radicals) used 50; fewer radicals need a longer window
+        # to have the same chance of stopping too early. Change it in the job document if needed.
+        n_radicals = job.sp['radical_percent']/100 * 2*job.sp['N_monomers']
+        job.doc.setdefault('stop_after_rounds', max(50, int(round(50*200/max(n_radicals, 1)))))
+
         # prevent overwriting of existing jobs 
         try:
             job.doc['reacted_monomers'] 
